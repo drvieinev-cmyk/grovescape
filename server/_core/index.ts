@@ -62,9 +62,18 @@ vtomE9xJVieq2NwJS0NxhYFImTeV8QRuR7QvyTM/Y/K8qWHkY2PmVnOBfw==
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-  // Note: Tesla public key route is registered above, before all other middleware
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+
+  // Tesla OAuth callback route (must match TESLA_REDIRECT_URI)
+  app.get("/api/tesla/callback", (req, res) => {
+    const { code, state } = req.query;
+    if (!code) return res.status(400).send("No auth code received");
+
+    // Redirect to custom app scheme (root, not /callback) to trigger ASWebAuthenticationSession
+    const appUrl = `elytra://?code=${code}${state ? `&state=${state}` : ""}`;
+    res.redirect(302, appUrl);
+  });
 
   // Elytra v1 API Routes
   app.use("/v1/tesla", teslaRouter);
