@@ -6,15 +6,12 @@ import { fileURLToPath } from "url";
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 async function setupDatabase() {
     console.log("🛠️ Starting ELYTRA Database Setup...");
 
     try {
-        const schemaPath = path.join(__dirname, "../schema.sql");
-        const schemaSql = fs.readFileSync(schemaPath, "utf8");
+        const schemaUrl = new URL("../schema.sql", import.meta.url);
+        const schemaSql = fs.readFileSync(schemaUrl, "utf8");
 
         console.log("📖 Reading schema.sql...");
 

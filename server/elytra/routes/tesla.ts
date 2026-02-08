@@ -6,6 +6,12 @@ import { requireFirebaseAuth, AuthedRequest } from "../middleware/auth";
 export const teslaRouter = Router();
 
 /**
+ * GET /v1/tesla/health
+ * Simple health check for the Tesla integration.
+ */
+teslaRouter.get("/health", (req, res) => res.json({ status: "ok", gateway: "grovescape" }));
+
+/**
  * POST /v1/tesla/auth/start
  * Generates the Tesla authorize URL.
  */
