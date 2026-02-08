@@ -49,11 +49,24 @@ teslaRouter.post("/auth/start", requireFirebaseAuth, async (req: AuthedRequest, 
 });
 
 /**
+ * GET /api/tesla/callback
+ * Redirects back to the app using custom scheme 'elytra'
+ */
+teslaRouter.get("/callback", (req, res) => {
+    const { code, state } = req.query;
+    if (!code) return res.status(400).send("No auth code received");
+
+    // Redirect to custom app scheme to trigger ASWebAuthenticationSession
+    const appUrl = `elytra://callback?code=${code}${state ? `&state=${state}` : ""}`;
+    res.redirect(302, appUrl);
+});
+
+/**
  * POST /v1/tesla/auth/callback
  * Accepts authorization code from iOS and exchanges for tokens.
  */
 teslaRouter.post("/auth/callback", requireFirebaseAuth, async (req: AuthedRequest, res) => {
-    const userId = (req as any).user.id; // Using the mocked user ID for now
+    const userId = (req as any).user.id;
     const { code, codeVerifier } = req.body;
 
     if (!code || !codeVerifier) {
