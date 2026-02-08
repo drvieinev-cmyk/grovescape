@@ -25,6 +25,17 @@ app.use("/v1", tripsRouter);
 app.use("/v1", devicesRouter);
 app.use("/v1/tesla", teslaRouter);
 
+// OAuth callback route (must match TESLA_REDIRECT_URI)
+app.get("/api/tesla/callback", (req, res) => {
+    const { code, state } = req.query;
+    if (!code) return res.status(400).send("No auth code received");
+
+    // Redirect to custom app scheme (root, not /callback) to trigger ASWebAuthenticationSession
+    const appUrl = `elytra://?code=${code}${state ? `&state=${state}` : ""}`;
+    res.redirect(302, appUrl);
+});
+
+
 // Health Check
 app.get("/health", (req, res) => res.json({
     status: "optimal",
