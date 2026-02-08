@@ -56,7 +56,7 @@ teslaRouter.post("/auth/callback", requireFirebaseAuth, async (req: AuthedReques
  * Returns the list of vehicles for the user.
  */
 teslaRouter.get("/vehicles", requireFirebaseAuth, async (req: AuthedRequest, res) => {
-    const userId = (req as any).user.id;
+    const userId = req.user!.id;
     try {
         const vehicles = await TeslaService.getVehicles(userId);
         res.json(vehicles);
@@ -70,7 +70,7 @@ teslaRouter.get("/vehicles", requireFirebaseAuth, async (req: AuthedRequest, res
  * Returns vehicle data for a specific VIN.
  */
 teslaRouter.get("/vehicles/:vin/status", requireFirebaseAuth, async (req: AuthedRequest, res) => {
-    const userId = (req as any).user.id;
+    const userId = req.user!.id;
     const { vin } = req.params;
     try {
         const data = await TeslaService.getVehicleData(userId, vin);

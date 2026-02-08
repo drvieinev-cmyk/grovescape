@@ -13,10 +13,18 @@ async function setupDatabase() {
         const schemaUrl = new URL("../schema.sql", import.meta.url);
         const schemaSql = fs.readFileSync(schemaUrl, "utf8");
 
-        console.log("📖 Reading schema.sql...");
+        const shouldReset = process.argv.includes("--reset");
 
-        // Split by semicolon to execute one by one (simplified)
-        // or just execute the whole thing if the driver supports it
+        if (shouldReset) {
+            console.log("🗑️ Resetting database (dropping existing tables)...");
+            await pool.query(`
+                DROP TABLE IF EXISTS trip_polylines, trips, daily_summaries, notification_devices, 
+                audit_events, vehicle_state_cache, vehicles, tesla_accounts, 
+                drivers, sessions, auth_identities, password_credentials, users, app_user, auth_identity, auth_audit_log CASCADE;
+            `);
+        }
+
+        console.log("📖 Applying schema.sql...");
         await pool.query(schemaSql);
 
         console.log("✅ Database schema applied successfully!");

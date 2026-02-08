@@ -42,7 +42,7 @@ export class TeslaService {
      */
     static async getAccessToken(userId: string): Promise<string> {
         const { rows } = await pool.query(
-            "SELECT encrypted_token_blob, token_meta_json, (users.data_key_salt) as salt FROM tesla_accounts JOIN users ON users.id = tesla_accounts.user_id WHERE user_id = $1",
+            "SELECT encrypted_token_blob, token_meta_json, (app_user.data_key_salt) as salt FROM tesla_accounts JOIN app_user ON app_user.id = tesla_accounts.user_id WHERE user_id = $1",
             [userId]
         );
 
@@ -78,7 +78,7 @@ export class TeslaService {
     }
 
     private static async storeTokens(userId: string, access_token: string, refresh_token: string, expires_in: number) {
-        const { rows } = await pool.query("SELECT data_key_salt FROM users WHERE id = $1", [userId]);
+        const { rows } = await pool.query("SELECT data_key_salt FROM app_user WHERE id = $1", [userId]);
         const salt = rows[0].data_key_salt;
         const userKey = deriveKey(MASTER_KEY, salt);
 

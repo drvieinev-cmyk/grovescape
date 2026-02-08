@@ -2,36 +2,47 @@
 -- Database: PostgreSQL
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
--- 1. Users table
-CREATE TABLE IF NOT EXISTS users (
+-- 1. App User table
+CREATE TABLE IF NOT EXISTS app_user (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    firebase_uid TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE NOT NULL,
+    email_normalized TEXT,
+    email_verified BOOLEAN DEFAULT FALSE,
     display_name TEXT,
     avatar_url TEXT,
+    locale TEXT,
+    providers TEXT [],
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_login_at TIMESTAMPTZ,
     deleted_at TIMESTAMPTZ,
-    data_key_salt TEXT NOT NULL -- For user-level encryption
+    data_key_salt TEXT -- For user-level encryption
 );
 -- 2. Auth Identities (SIWA, Google, Password)
-CREATE TABLE IF NOT EXISTS auth_identities (
+CREATE TABLE IF NOT EXISTS auth_identity (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    firebase_uid TEXT NOT NULL,
     provider TEXT NOT NULL,
-    -- 'apple', 'google', 'password'
-    provider_subject TEXT UNIQUE,
-    -- id from apple/google
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    provider_user_id TEXT NOT NULL,
+    email TEXT,
+    email_normalized TEXT,
+    last_used_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(provider, provider_user_id)
 );
--- 3. Password Credentials
-CREATE TABLE IF NOT EXISTS password_credentials (
-    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-    password_hash TEXT NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS auth_audit_log (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    firebase_uid TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    provider TEXT,
+    success BOOLEAN DEFAULT TRUE,
+    message TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 -- 4. Sessions
 CREATE TABLE IF NOT EXISTS sessions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
     refresh_token_hash TEXT NOT NULL,
     device_info JSONB,
     ip_hash TEXT,
@@ -42,19 +53,20 @@ CREATE TABLE IF NOT EXISTS sessions (
 -- 5. Tesla Accounts (Encrypted Tokens)
 CREATE TABLE IF NOT EXISTS tesla_accounts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
     tesla_email TEXT,
     encrypted_token_blob TEXT NOT NULL,
     -- Encrypted AES-GCM
     token_meta_json JSONB,
     -- Expiration info, scopes
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    revoked_at TIMESTAMPTZ
+    revoked_at TIMESTAMPTZ,
+    UNIQUE(user_id)
 );
 -- 6. Vehicles
 CREATE TABLE IF NOT EXISTS vehicles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
     vin TEXT NOT NULL,
     model TEXT,
     nickname TEXT,
@@ -74,7 +86,7 @@ CREATE TABLE IF NOT EXISTS vehicle_state_cache (
 -- 8. Drivers
 CREATE TABLE IF NOT EXISTS drivers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     email TEXT,
     phone TEXT,
@@ -83,7 +95,7 @@ CREATE TABLE IF NOT EXISTS drivers (
 -- 9. Trips
 CREATE TABLE IF NOT EXISTS trips (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
     vehicle_id UUID NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
     driver_id UUID REFERENCES drivers(id) ON DELETE
     SET NULL,
@@ -111,7 +123,7 @@ CREATE TABLE IF NOT EXISTS trip_polylines (
 );
 -- 11. Daily Summaries
 CREATE TABLE IF NOT EXISTS daily_summaries (
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
     vehicle_id UUID NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
     date DATE NOT NULL,
     total_km DECIMAL(10, 2) DEFAULT 0,
@@ -122,7 +134,7 @@ CREATE TABLE IF NOT EXISTS daily_summaries (
 -- 12. Notification Devices
 CREATE TABLE IF NOT EXISTS notification_devices (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
     platform TEXT NOT NULL,
     -- 'ios', 'watchos'
     apns_token TEXT NOT NULL,
@@ -132,7 +144,7 @@ CREATE TABLE IF NOT EXISTS notification_devices (
 -- 13. Audit Events (Security & Debugging)
 CREATE TABLE IF NOT EXISTS audit_events (
     id BIGSERIAL PRIMARY KEY,
-    user_id UUID REFERENCES users(id) ON DELETE
+    user_id UUID REFERENCES app_user(id) ON DELETE
     SET NULL,
         type TEXT NOT NULL,
         -- 'LOGIN_SUCCESS', 'TESLA_DISCONNECT', 'TRIP_DETECTED'
