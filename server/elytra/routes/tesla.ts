@@ -56,8 +56,8 @@ teslaRouter.get("/callback", (req, res) => {
     const { code, state } = req.query;
     if (!code) return res.status(400).send("No auth code received");
 
-    // Redirect to custom app scheme to trigger ASWebAuthenticationSession
-    const appUrl = `elytra://callback?code=${code}${state ? `&state=${state}` : ""}`;
+    // Redirect to custom app scheme (root, not /callback) to trigger ASWebAuthenticationSession
+    const appUrl = `elytra://?code=${code}${state ? `&state=${state}` : ""}`;
     res.redirect(302, appUrl);
 });
 
