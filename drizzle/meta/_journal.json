@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1769748594411,
+      "tag": "0000_exotic_ben_grimm",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1769748692816,
+      "tag": "0001_sleepy_sauron",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1769794028803,
+      "tag": "0002_gray_nightshade",
+      "breakpoints": true
+    }
+  ]
+}
