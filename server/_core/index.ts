@@ -9,6 +9,10 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { teslaRouter } from "../elytra/routes/tesla";
+import { authRouter } from "../elytra/routes/auth";
+import { tripsRouter } from "../elytra/routes/trips";
+import { devicesRouter } from "../elytra/routes/devices";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -61,6 +65,13 @@ vtomE9xJVieq2NwJS0NxhYFImTeV8QRuR7QvyTM/Y/K8qWHkY2PmVnOBfw==
   // Note: Tesla public key route is registered above, before all other middleware
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+
+  // Elytra v1 API Routes
+  app.use("/v1/tesla", teslaRouter);
+  app.use("/v1", authRouter);
+  app.use("/v1", tripsRouter);
+  app.use("/v1", devicesRouter);
+
   // tRPC API
   app.use(
     "/api/trpc",
