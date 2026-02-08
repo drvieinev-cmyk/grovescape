@@ -2,14 +2,32 @@ import { Router } from "express";
 import axios from "axios";
 import { TeslaService } from "../services/tesla";
 import { requireFirebaseAuth, AuthedRequest } from "../middleware/auth";
+import { pool } from "../services/db";
 
 export const teslaRouter = Router();
 
 /**
  * GET /v1/tesla/health
- * Simple health check for the Tesla integration.
+ * Comprehensive health check for the Tesla integration.
  */
-teslaRouter.get("/health", (req, res) => res.json({ status: "ok", gateway: "grovescape" }));
+teslaRouter.get("/health", async (req, res) => {
+    try {
+        await pool.query("SELECT 1");
+        res.json({
+            status: "ok",
+            gateway: "grovescape",
+            database: "connected",
+            timestamp: new Date().toISOString()
+        });
+    } catch (error: any) {
+        res.status(503).json({
+            status: "error",
+            gateway: "grovescape",
+            database: "disconnected",
+            error: error.message
+        });
+    }
+});
 
 /**
  * POST /v1/tesla/auth/start
